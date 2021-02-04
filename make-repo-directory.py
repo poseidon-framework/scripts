@@ -6,11 +6,12 @@ import json
 import sys
 import zipfile
 
-dir_ = "/Users/schiffels/poseidon/repo"
-outJSON = "out.json"
-outHTML = 'index.html'
-# dir_ = "/var/www/bioinf/htdocs/poseidon/repo"
-# outJSON = "/var/www/bioinf/htdocs/poseidon/package_dir.json"
+# dir_ = "/Users/schiffels/poseidon/repo"
+# outJSON = "out.json"
+# outHTML = 'index.html'
+dir_ = "/var/www/bioinf/htdocs/poseidon/repo"
+outJSON = "/var/www/bioinf/htdocs/poseidon/package_dir.json"
+outHTML = "/var/www/bioinf/htdocs/poseidon/index.html"
 
 repo_dir = []
 for path, dirs, files in os.walk(dir_):
@@ -52,7 +53,7 @@ for pck in repo_dir:
   <td>{pck['title']}</td>
   <td>{pck['description']}</td>
   <td>{pck['packageVersion']}</td>
-  <td><a href={pck['zip_file']} download>{os.path.basename(pck['zip_file'])}</a></td>
+  <td><a href=\"{os.path.relpath(pck['zip_file'], start="/var/www/bioinf/htdocs/poseidon")}\" download>{os.path.basename(pck['zip_file'])}</a></td>
 </tr>
 """
 
