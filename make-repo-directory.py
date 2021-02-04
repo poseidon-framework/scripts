@@ -26,8 +26,8 @@ for path, dirs, files in os.walk(dir_):
       with open(os.path.join(path, file_), 'r') as stream:
         yml = yaml.safe_load(stream)
       package_obj = {
-        'path' : os.path.relpath(path, start=reldir),
-        'pos_yaml' : os.path.relpath(os.path.join(path, file_), start=reldir),
+        'path' : os.path.relpath(path, start=dir_),
+        'pos_yaml' : os.path.relpath(os.path.join(path, file_), start=dir_),
         'title' : yml['title'],
         'zip_file' : zipFN
       }
