@@ -6,9 +6,12 @@ import json
 import sys
 import zipfile
 
-dir_ = "/Users/schiffels/poseidon/repo"
-reldir = "/Users/schiffels/poseidon/repo"
-outJSON = "out.json"
+# dir_ = "/Users/schiffels/poseidon/repo"
+# reldir = "/Users/schiffels/poseidon/repo"
+# outJSON = "out.json"
+dir_ = "/var/www/bioinf/htdocs/poseidon/repo"
+outJSON = "/var/www/bioinf/htdocs/poseidon/package_dir.json"
+outMD = "/var/www/bioinf/htdocs/poseidon/package_dir.md"
 
 repo_dir = []
 for path, dirs, files in os.walk(dir_):
