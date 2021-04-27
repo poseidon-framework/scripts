@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-rsync -avzP --exclude='*.zip' --exclude '.*' ~/poseidon-repos/ ~/nextcloud/poseidon-repos
+rsync -avzP --exclude='*.zip' --exclude '.*' gwdg:poseidon-repos/ ~/Nextcloud-EVA/poseidon-repos
