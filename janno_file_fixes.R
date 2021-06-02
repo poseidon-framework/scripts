@@ -124,14 +124,28 @@ olalde_poseidon <- readr::read_tsv(
   col_types = readr::cols(.default = readr::col_character())
 )
 
-res <- split_age_string(olalde_poseidon$Date_BC_AD_Median.paper)
+age_string_split <- split_age_string(olalde_poseidon$Date_BC_AD_Median.paper)
 
-poseidonR::quickcalibrate(
-  Map(as.numeric, strsplit(res$Date_C14_Uncal_BP, ";")),
-  Map(as.numeric, strsplit(res$Date_C14_Uncal_BP_Err, ";"))
+cal_res <- poseidonR::quickcalibrate(
+  Map(as.numeric, strsplit(age_string_split$Date_C14_Uncal_BP, ";")),
+  Map(as.numeric, strsplit(age_string_split$Date_C14_Uncal_BP_Err, ";"))
 )
 
-readr::write_tsv(res, "~/agora/published_data/2019_Olalde_Iberia/dating.tsv")
+res <- cbind(
+  age_string_split[1:4],
+  cal_res[1],
+  age_string_split[5:7]
+)
+
+res$Date_BC_AD_Start[res$Date_Type == "C14"] <- cal_res$Date_BC_AD_Start[res$Date_Type == "C14"]
+res$Date_BC_AD_Stop[res$Date_Type == "C14"] <- cal_res$Date_BC_AD_Stop[res$Date_Type == "C14"]
+res$Date_BC_AD_Median[res$Date_Type == "contextual"] <- purrr::map2_int(
+  res$Date_BC_AD_Start[res$Date_Type == "contextual"],
+  res$Date_BC_AD_Stop[res$Date_Type == "contextual"],
+  function(x, y) { as.integer(round(mean(c(x,y)))) }
+)
+
+readr::write_tsv(res, "~/agora/published_data/2019_Olalde_Iberia/dating.tsv", na = "n/a")
 
 split_age_string <- function(x) {
   
@@ -211,6 +225,14 @@ split_age_string <- function(x) {
       }
     }
     # normal range 5000-4700 BCE
+    if (simple_age_split[[i]][2] == "cal" &
+        simple_age_split[[i]][3] == "BCE" &
+        simple_age_split[[i]][5] == "cal" &
+        simple_age_split[[i]][6] == "CE") {
+      start[i] <- -as.numeric(simple_age_split[[i]][1])
+      stop[i] <- as.numeric(simple_age_split[[i]][4])
+      next
+    }
     if (simple_age_split[[i]][3] %in% c("BCE", "calBCE") |
         (simple_age_split[[i]][3] == "cal" & simple_age_split[[i]][4] == "BCE")) {
       start[i] <- -as.numeric(simple_age_split[[i]][1])
@@ -223,7 +245,6 @@ split_age_string <- function(x) {
       stop[i] <- as.numeric(simple_age_split[[i]][2])
       next
     }
-    # this is incomplete and does not cover BCE -> CE cases
     if (simple_age_split[[i]][2] %in% c("BCE", "calBCE") & 
         simple_age_split[[i]][4] %in% c("CE", "calCE")) {
       start[i] <- -as.numeric(simple_age_split[[i]][1])
