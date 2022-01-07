@@ -28,7 +28,7 @@ present "tree" "A two-package repository"
 
 present "trident summarise -d ." "Get summary statistics"
 
-present "trident list -d . --individuals -j Nr_autosomal_SNPs" "List individual-wise information"
+present "trident list -d . --individuals -j Country" "List individual-wise information"
 
 present "trident forge -d . -f '<HYR002>,<Gordinesti>' -o test -n Testpackage" "Merge individuals/groups/packages to form a new package"
 
