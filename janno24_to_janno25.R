@@ -1,14 +1,12 @@
 setwd("~/agora/published_data")
 
-jannoFile <- list.files(pattern = ".janno", recursive = T)[3]
+jannoFile <- list.files(pattern = ".janno", recursive = T)[141]
 
 jannoDF <- readr::read_tsv(jannoFile)
 
-# remove columns with only empty values
-jannoDFwithoutNA <- jannoDF |>
-  dplyr::select(tidyselect:::where(\(x) {!all(x == "n/a" | x == "")}))
-
 # simple column renaming
+jannoDFnewColNames <- jannoDF
+
 colNameLookup <- hash::hash(
   c("Individual_ID", "No_of_Libraries", "Data_Type", "Nr_autosomal_SNPs", "Publication_Status", "Coverage_1240K"),
   c("Poseidon_ID", "Nr_Libraries", "Capture_Type", "Nr_SNPs", "Publication", "Coverage_on_Target_SNPs")
@@ -22,7 +20,52 @@ replaceName <- function(x) {
   }
 }
 
-colnames(jannoDFwithoutNA) <- sapply(colnames(jannoDFwithoutNA), replaceName)
+colnames(jannoDFnewColNames) <- sapply(colnames(jannoDFnewColNames), replaceName)
 
 # enable new contamination meas setup
-# ...
+
+# add empty contam columns if missing
+if (!"Xcontam" %in% colnames(jannoDFnewColNames)) {
+  jannoDFnewColNames$Xcontam <- "n/a"
+  jannoDFnewColNames$Xcontam_stderr <- "n/a"
+}
+if (!"mtContam" %in% colnames(jannoDFnewColNames)) {
+  jannoDFnewColNames$mtContam <- "n/a"
+  jannoDFnewColNames$mtContam_stderr <- "n/a"
+}
+
+isPoseidonNA <- function(x) {
+  all(x == "n/a" | x == "")
+}
+
+uniteWithoutNA <- function(x, y, toUniteFirst = x, toUniteSecond = y) {
+  purrr::pmap_chr(
+    list(x, y, toUniteFirst, toUniteSecond), \(a, b, tF, tS) {
+      if (isPoseidonNA(a) & isPoseidonNA(b)) {
+        "n/a"
+      } else if (isPoseidonNA(a) & !isPoseidonNA(b)) {
+        paste(tS)
+      } else if (!isPoseidonNA(a) & isPoseidonNA(b)) {
+        paste(tF)
+      } else {
+        paste(tF, tS, sep = ";")
+      }
+    }
+  )
+}
+
+contam <- jannoDFnewColNames |>
+  dplyr::select(Poseidon_ID, Xcontam, Xcontam_stderr, mtContam, mtContam_stderr) |>
+  dplyr::transmute(
+    Contamination = uniteWithoutNA(Xcontam, mtContam),
+    Contamination_Err = uniteWithoutNA(Xcontam, mtContam, Xcontam_stderr, mtContam_stderr),
+    Contamination_Meas = uniteWithoutNA(Xcontam, mtContam, "X-based (unknown software)", "mt-based (unknown software)")
+  )
+
+jannoContam <- jannoDFnewColNames |>
+  dplyr::select(-Xcontam, -Xcontam_stderr, -mtContam, -mtContam_stderr) |>
+  dplyr::bind_cols(contam)
+
+# remove columns with only empty values
+jannoDFwithoutNA <- jannoContam |>
+  dplyr::select(tidyselect:::where(\(x) {!isPoseidonNA(x)}))
