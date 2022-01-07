@@ -35,11 +35,11 @@ replaceName <- function(x) {
   }
 }
 
-jannoFiles <- list.files(pattern = ".janno", recursive = T)[140:142]
+jannoFiles <- list.files(pattern = ".janno", recursive = T)
 purrr::map(
   jannoFiles, function(jannoFile) {
     
-    jannoDF <- readr::read_tsv(jannoFile)
+    jannoDF <- readr::read_tsv(jannoFile, show_col_types = FALSE)
     
     # simple column renaming
     jannoDFnewColNames <- jannoDF
@@ -77,4 +77,12 @@ purrr::map(
     
     return(list(jannoFile, jannoReordered))
   }
+) -> result_janno_list
+
+# write files back to file system
+purrr::walk(
+  result_janno_list, function(x) {
+    readr::write_tsv(x[[2]], file = x[[1]], na = "n/a")
+  }
 )
+
