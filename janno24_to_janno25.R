@@ -1,6 +1,10 @@
 setwd("~/agora/published_data")
 
+#### get column order data ####
+
 columnOrder <- readr::read_tsv("https://raw.githubusercontent.com/poseidon-framework/poseidon2-schema/janno_column_names_and_order/janno_columns.tsv")$janno_column_name
+
+#### helper functions ####
 
 isPoseidonNA <- function(x) {
   all(is.na(x) | x == "n/a" | x == "")
@@ -27,7 +31,7 @@ colNameLookup <- hash::hash(
   c("Poseidon_ID", "Nr_Libraries", "Capture_Type", "Nr_SNPs", "Publication", "Coverage_on_Target_SNPs")
 )
 
-replaceName <- function(x) {
+lookupName <- function(x) {
   if (x %in% hash::keys(colNameLookup)) {
     hash::values(colNameLookup, x)
   } else {
@@ -35,54 +39,65 @@ replaceName <- function(x) {
   }
 }
 
-jannoFiles <- list.files(pattern = ".janno", recursive = T)
-purrr::map(
-  jannoFiles, function(jannoFile) {
-    
-    jannoDF <- readr::read_tsv(jannoFile, show_col_types = FALSE)
-    
-    # simple column renaming
-    jannoDFnewColNames <- jannoDF
-    colnames(jannoDFnewColNames) <- sapply(colnames(jannoDFnewColNames), replaceName)
-    
-    # enable new contamination meas setup
-    # add empty contam columns, if they are missing (technically more simple)
-    if (!"Xcontam" %in% colnames(jannoDFnewColNames)) {
-      jannoDFnewColNames$Xcontam <- "n/a"
-      jannoDFnewColNames$Xcontam_stderr <- "n/a"
-    }
-    if (!"mtContam" %in% colnames(jannoDFnewColNames)) {
-      jannoDFnewColNames$mtContam <- "n/a"
-      jannoDFnewColNames$mtContam_stderr <- "n/a"
-    }
-    
-    contam <- jannoDFnewColNames |>
-      dplyr::select(Poseidon_ID, Xcontam, Xcontam_stderr, mtContam, mtContam_stderr) |>
-      dplyr::transmute(
-        Contamination = uniteWithoutNA(Xcontam, mtContam),
-        Contamination_Err = uniteWithoutNA(Xcontam, mtContam, Xcontam_stderr, mtContam_stderr),
-        Contamination_Meas = uniteWithoutNA(Xcontam, mtContam, "X-based (unknown software)", "mt-based (unknown software)")
-      )
-    
-    jannoContam <- jannoDFnewColNames |>
-      dplyr::select(-Xcontam, -Xcontam_stderr, -mtContam, -mtContam_stderr) |>
-      dplyr::bind_cols(contam)
-    
-    # remove columns with only empty values
-    jannoDFwithoutNA <- jannoContam |>
-      dplyr::select(tidyselect:::where(\(x) {!isPoseidonNA(x)}))
-    
-    # reorder columns
-    jannoReordered <- jannoDFwithoutNA[columnOrder[columnOrder %in% colnames(jannoDFwithoutNA)]]
-    
-    return(list(jannoFile, jannoReordered))
+constructNewContamCols <- function(janno) {
+  # start by adding empty (old) contam columns, if they are missing (technically more simple)
+  if (!"Xcontam" %in% colnames(janno)) {
+    janno$Xcontam <- "n/a"
+    janno$Xcontam_stderr <- "n/a"
   }
-) -> result_janno_list
+  if (!"mtContam" %in% colnames(janno)) {
+    janno$mtContam <- "n/a"
+    janno$mtContam_stderr <- "n/a"
+  }
+  
+  # construct new contam columns from the old ones
+  janno |>
+    dplyr::select(Poseidon_ID, Xcontam, Xcontam_stderr, mtContam, mtContam_stderr) |>
+    dplyr::transmute(
+      Contamination = uniteWithoutNA(Xcontam, mtContam),
+      Contamination_Err = uniteWithoutNA(Xcontam, mtContam, Xcontam_stderr, mtContam_stderr),
+      Contamination_Meas = uniteWithoutNA(Xcontam, mtContam, "X-based (unknown software)", "mt-based (unknown software)")
+    ) |>
+    dplyr::select(-Xcontam, -Xcontam_stderr, -mtContam, -mtContam_stderr)
+}
+
+updateJanno <- function(janno) {
+  
+  # simple column renaming
+  jannoNewColNames <- janno
+  colnames(jannoNewColNames) <- sapply(colnames(jannoNewColNames), lookupName)
+  
+  # enable new contamination column setup
+  jannoContam <- dplyr::bind_cols(jannoNewColNames, constructNewContamCols(jannoNewColNames))
+  
+  # remove columns with only empty values
+  jannoWithoutNA <- jannoContam |>
+    dplyr::select(tidyselect:::where(\(x) { !isPoseidonNA(x) }))
+  
+  # reorder columns
+  jannoReordered <- jannoWithoutNA[columnOrder[columnOrder %in% colnames(jannoWithoutNA)]]
+  
+  # return list with file name and 
+  return(list(jannoFile, jannoReordered))
+}
+
+#### update one janno file ####
+
+jannoFile <- "path/to/your/janno/file.janno"
+janno <- readr::read_tsv(jannoFile, show_col_types = FALSE)
+updatedJanno <- updateJanno(janno)
+readr::write_tsv(updatedJanno[[2]], file = updatedJanno[[1]], na = "n/a")
+
+#### update multiple janno files ####
+
+# find all janno files
+jannoFiles <- list.files(pattern = ".janno", recursive = T)
 
 # write files back to file system
-purrr::walk(
-  result_janno_list, function(x) {
-    readr::write_tsv(x[[2]], file = x[[1]], na = "n/a")
+result_janno_list <- purrr::walk(
+  jannoFiles, function(jannoFile) {
+    janno <- readr::read_tsv(jannoFile, show_col_types = FALSE)
+    updatedJanno <- updateJanno(janno)
+    readr::write_tsv(updatedJanno[[2]], file = updatedJanno[[1]], na = "n/a")
   }
 )
-
