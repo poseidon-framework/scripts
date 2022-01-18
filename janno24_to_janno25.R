@@ -4,9 +4,7 @@ columnOrder <- readr::read_tsv("https://raw.githubusercontent.com/poseidon-frame
 
 #### helper functions ####
 
-isPoseidonNA <- function(x) {
-  all(is.na(x) | x == "n/a" | x == "")
-}
+isPoseidonNA <- function(x) { all(is.na(x) | x == "n/a" | x == "") }
 
 uniteWithoutNA <- function(x, y, toUniteFirst = x, toUniteSecond = y) {
   purrr::pmap_chr(
@@ -47,7 +45,6 @@ constructNewContamCols <- function(janno) {
     janno$mtContam <- "n/a"
     janno$mtContam_stderr <- "n/a"
   }
-  
   # construct new contam columns from the old ones
   janno |>
     dplyr::select(Poseidon_ID, Xcontam, Xcontam_stderr, mtContam, mtContam_stderr) |>
@@ -59,21 +56,16 @@ constructNewContamCols <- function(janno) {
 }
 
 updateJanno <- function(janno) {
-  
   # simple column renaming
   jannoNewColNames <- janno
   colnames(jannoNewColNames) <- sapply(colnames(jannoNewColNames), lookupName)
-  
   # enable new contamination column setup
   jannoContam <- dplyr::bind_cols(jannoNewColNames, constructNewContamCols(jannoNewColNames))
-  
   # remove columns with only empty values
   jannoWithoutNA <- jannoContam |>
     dplyr::select(tidyselect:::where(\(x) { !isPoseidonNA(x) }))
-  
   # reorder columns
   jannoReordered <- jannoWithoutNA[columnOrder[columnOrder %in% colnames(jannoWithoutNA)]]
-  
   # return list with file name and 
   return(list(jannoFile, jannoReordered))
 }
@@ -88,7 +80,7 @@ readr::write_tsv(updatedJanno[[2]], file = updatedJanno[[1]], na = "n/a")
 #### update multiple janno files ####
 
 # find all janno files
-jannoFiles <- list.files("~/agora/published_data", pattern = ".janno", recursive = T, full.names = T)
+jannoFiles <- list.files("path/to/your/janno/repo", pattern = ".janno", recursive = T, full.names = T)
 
 # write files back to file system
 result_janno_list <- purrr::walk(
