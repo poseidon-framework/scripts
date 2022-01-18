@@ -1,5 +1,3 @@
-setwd("~/agora/published_data")
-
 #### get column order data ####
 
 columnOrder <- readr::read_tsv("https://raw.githubusercontent.com/poseidon-framework/poseidon2-schema/janno_column_names_and_order/janno_columns.tsv")$janno_column_name
@@ -57,8 +55,7 @@ constructNewContamCols <- function(janno) {
       Contamination = uniteWithoutNA(Xcontam, mtContam),
       Contamination_Err = uniteWithoutNA(Xcontam, mtContam, Xcontam_stderr, mtContam_stderr),
       Contamination_Meas = uniteWithoutNA(Xcontam, mtContam, "X-based (unknown software)", "mt-based (unknown software)")
-    ) |>
-    dplyr::select(-Xcontam, -Xcontam_stderr, -mtContam, -mtContam_stderr)
+    )
 }
 
 updateJanno <- function(janno) {
@@ -91,7 +88,7 @@ readr::write_tsv(updatedJanno[[2]], file = updatedJanno[[1]], na = "n/a")
 #### update multiple janno files ####
 
 # find all janno files
-jannoFiles <- list.files(pattern = ".janno", recursive = T)
+jannoFiles <- list.files("~/agora/published_data", pattern = ".janno", recursive = T, full.names = T)
 
 # write files back to file system
 result_janno_list <- purrr::walk(
