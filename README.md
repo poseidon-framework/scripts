@@ -11,3 +11,11 @@ A script to be run on any computer to copy the entire repository on our Cloudser
 ## `make-repo-directry.py` 
 
 Old script to zip all packages for the server. Don't need this anymore, since the HTTP server program is now capable of zipping automatically.
+
+## `get_ena_table.py`
+
+This script can be used like this:
+
+    ./get_ena_table.py PRJEB39316 -o test.tsv
+
+which downloads a TSV table with meta-info including URLS to download fastq-files in the specified output file (here `test.tsv`).
