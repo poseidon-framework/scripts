@@ -16,24 +16,24 @@ parser.add_argument('-o', '--output_file', required=True, help="The name of the 
 args = parser.parse_args()
 
 ena_cols = [
-    "fastq_aspera", 
-    "first_public", 
-    "last_updated", 
+    "sample_accession", 
+    "study_accession", 
     "run_accession", 
     "sample_alias", 
     "secondary_sample_accession", 
-    "fastq_bytes", 
-    "fastq_md5", 
+    "first_public", 
+    "last_updated", 
     "instrument_model", 
     "library_layout", 
     "library_source", 
-    "study_accession", 
-    "fastq_ftp", 
     "instrument_platform", 
     "library_name", 
     "library_strategy", 
+    "fastq_aspera", 
+    "fastq_bytes", 
+    "fastq_md5", 
+    "fastq_ftp", 
     "read_count", 
-    "sample_accession", 
     "submitted_ftp"]
 
 ena_col_str = ",".join(ena_cols)
