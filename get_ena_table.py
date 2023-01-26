@@ -29,10 +29,10 @@ ena_cols = [
     "instrument_platform", 
     "library_name", 
     "library_strategy", 
+    "fastq_ftp", 
     "fastq_aspera", 
     "fastq_bytes", 
     "fastq_md5", 
-    "fastq_ftp", 
     "read_count", 
     "submitted_ftp"]
 
