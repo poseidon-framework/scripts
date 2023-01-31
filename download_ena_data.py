@@ -4,6 +4,7 @@ import sys
 import argparse
 import os
 import yaml
+import wget
 
 parser = argparse.ArgumentParser(
     prog = 'download_ena_data',
@@ -18,7 +19,7 @@ parser.add_argument('--dry_run', action='store_true', help="Only list the downlo
 def read_ena_table(file_name):
     l = file_name.readlines()
     headers = l[0].split()
-    return list(map(lambda row: dict(zip(headers, row.split())), l[1:]))
+    return map(lambda row: dict(zip(headers, row.split('\t'))), l[1:])
 
 args = parser.parse_args()
 
@@ -36,6 +37,14 @@ for root, dirs, files in os.walk(args.poseidon_package_dir):
                 odir = os.path.join(args.output_dir, pac_dir_name)
                 os.makedirs(odir, exist_ok=True)
                 with open(source_file, 'r') as f: 
-                    ena_entries = read_ena_table(f)
-                    print(ena_entries)
+                    for ena_entry in read_ena_table(f):
+                        fastq_url = ena_entry["fastq_ftp"]
+                        fastq_filename = os.path.basename(fastq_url)
+                        target_file = os.path.join(odir, fastq_filename)
+                        if os.path.isfile(target_file):
+                            print(f"Target file {target_file} already exists. Skipping", file=sys.stderr)
+                        else:
+                            print(f"Downloading {fastq_url} into {target_file}", file=sys.stderr)
+                            if not args.dry_run:
+                                wget.download("http://" + fastq_url, out=target_file)
 
