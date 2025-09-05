@@ -14,15 +14,24 @@ suppressPackageStartupMessages(require(magrittr))
 if(!require('remotes', quietly = T)) install.packages('remotes')
 if(!require('janno', quietly = T)) remotes::install_github('poseidon-framework/janno')
 
+VERSION <- "1.0.0"
+
 option_list <- list(
   make_option(c("-i", "--input") , type = "character", help = "Path to the input poseidon package directory" , metavar = "Pacakge_Dir"),
   make_option(c("-o", "--output"), type = "character", help = "Path to the output janno file", metavar = "new_janno"),
   make_option(c("-w", "--overwrite_existing"), action = "store_true", default = FALSE, 
-              help = "Overwrite existing values in the output columns. When this option is provided, newly-computed values will be preferred over existing ones. The original values will be kept for any fields that are not inferred. (default: FALSE)")
+              help = "Overwrite existing values in the output columns. When this option is provided, newly-computed values will be preferred over existing ones. The original values will be kept for any fields that are not inferred. (default: FALSE)"),
+  make_option(c("-v", "--version"), action = "store_true", default = FALSE, 
+              help = "Print the script version and exit")
 )
 
 opt_parser <- OptionParser(option_list = option_list)
 opt <- parse_args(opt_parser)
+
+if (opt$version) {
+  cat("janno_calibrate_c14.R version", VERSION, "\n")
+  quit(status = 0)
+}
 
 if (is.null(opt$input) || is.null(opt$output)) {
   print_help(opt_parser)
@@ -61,8 +70,8 @@ if ( nrow( filter(input_janno, Latitude >= 0, ! is.na(Date_Type) > 1)) ) {
     )
 } else {calibrated_north <- NULL}
 
-if ( nrow( filter(input_janno, Latitude < 0, ! is.na(Date_Type) > 1)) ) {
 ## Southern Hemisphere calibration curve
+if ( nrow( filter(input_janno, Latitude < 0, ! is.na(Date_Type) > 1)) ) {
   message("Calibrating dates in Southern Hemisphere")
   calibrated_south <- input_janno %>% 
     dplyr::filter( Latitude < 0, ! is.na(Date_Type) ) %>%
@@ -82,7 +91,7 @@ calibrated_dates <- bind_rows(
   calibrated_north,
   calibrated_south,
   dplyr::filter(input_janno, is.na(Date_Type))
-  ) %>%
+) %>%
   dplyr::select(Poseidon_ID, ends_with("_Derived"), -Date_BC_AD_Prob) %>%
   dplyr::rename(
     .cols = ends_with("_Derived"),
@@ -108,7 +117,7 @@ if ( ! opt$overwrite_existing ) {
         is.na(Date_Note.x) ~ Date_Note.y,
         is.na(Date_Note.y) ~ Date_Note.x,
         TRUE               ~ paste(Date_Note.x, Date_Note.y, sep=';')
-        )
+      )
     )
 } else {
   output_janno <- joined_janno %>%
