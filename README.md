@@ -19,3 +19,12 @@ This script can be used like this:
     ./get_ena_table.py PRJEB39316 -o test.tsv
 
 which downloads a TSV table with meta-info including URLS to download fastq-files in the specified output file (here `test.tsv`).
+
+## `janno_calibrate_c14.R`
+
+This script takes an input poseidon package (`-i`) and an output file name (`-o`). It reads the janno of the input package, and applies `janno::process_age()` to the janno `Date_*` columns, to calibrate the C14 dates, and fill contextual dates. The output is a new janno file with the calibrated dates.
+
+    ./janno_calibrate_c14.R [-w/--overwrite] (-i input_poseidon_package_dir) (-o output_janno_file)
+
+When `Latitude` information is available, the script applies calibration based on `IntCal20` or `SHCal20` accordingly.
+The option `-w` or `--overwrite` allows overwriting information in the original janno, otherwise only missing fields are filled-in.
